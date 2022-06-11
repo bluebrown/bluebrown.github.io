@@ -1,22 +1,24 @@
+bundle=bundle2.7
+
 dev:
-	bundle exec jekyll serve --watch --drafts
+	$(bundle) exec jekyll serve --watch --drafts
 
 build:
-	bundle exec jekyll build
+	$(bundle) exec jekyll build
 
 update:
-	bundle update github-pages
+	$(bundle) update github-pages
 
 install:
-	bundle install
+	$(bundle) install
 
 info:
-	bundle exec github-pages versions
+	$(bundle) exec github-pages versions
 
 syntax:
 	mkdir -p _sass
-	bundle exec rougify style github > _sass/syntax-light.scss
-	bundle exec rougify style monokai > _sass/syntax-dark.scss
+	$(bundle) exec rougify style github > _sass/syntax-light.scss
+	$(bundle) exec rougify style monokai > _sass/syntax-dark.scss
 
 lib:
 	mkdir -p _includes/lib
