@@ -1,7 +1,7 @@
 # Bit Flags in Go
 
 Sometimes options can be expressed using so called bit flags. When using bit
-flags, each bit of a given variable is considered on its own to determine if a
+flags, each bit of a given integer is considered on its own to determine if a
 specific option is set.
 
 For example we might have a unsigned integer variable to define the combination
@@ -35,10 +35,12 @@ const (
 
 ## Set a bit
 
-If we want to turn on a particular color, we use the bitwise `OR` operator.
+If we want to turn on a particular color, we use the bitwise `OR` operator. This
+will leave every bit in `rgb` untouched except for the `red` one. The `red` bit
+is *set*  set since the `OR` will set it if it is set in `rgb` or `red`.
 
 ```go
-rgb := rgb|red // 001
+rgb = rgb|red // 001
 ```
 
 ## Unset a bit
