@@ -1,7 +1,7 @@
 # Bit Flags in Go
 
 Sometimes options can be expressed using so called bit flags. When using bit
-flags, each bit of a given integer is considered on its own to determine if a
+flags, each bit of a given byte is considered on its own to determine if a
 specific option is set.
 
 For example we might have a unsigned integer variable to define the combination
@@ -16,14 +16,14 @@ var rgb uint8 = 0 b 0 0 0
                     └───── blue
 ```
 
-Each color occupies on bit in the integer variable. Above, all bits are set to
-0, so we consider the respective colors to be *unset*.
+Each color occupies on bit in the integer variable or *bit field*. Above, all
+bits are set to 0, so we consider the respective colors to be *unset*.
 
 Now we can use bitwise operators to manipulate individual bits of the rgb
-variable
+variable.
 
-In order to make it easier to manipulate the bits, we create a variable for each
-color.
+In order to make it easier to manipulate the bits, we create a constant *bit
+mask* for each color.
 
 ```go
 const (
