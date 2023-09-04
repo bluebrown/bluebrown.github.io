@@ -1,4 +1,4 @@
-# Bash Magic
+# Effective Bash
 
 This post contains a loose collection of useful stuff when it comes to bash
 scripting.
