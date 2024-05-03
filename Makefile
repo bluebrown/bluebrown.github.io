@@ -1,14 +1,5 @@
 GITHUB_SHA ?= $(shell git rev-parse main)
 
-test-%: %-other
-	@echo "$@"
-	@echo "$*"
-	@echo "$^"
-	@echo "$<"
-
-%-other:
-	@echo -n ""
-
 dev:
 	doktri serve --author 'Nico Braun'
 
