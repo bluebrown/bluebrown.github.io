@@ -1,0 +1,100 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><title>Nico Braun - Opengl Windows Vscode</title><link rel=icon href=/assets/favicon.ico><link rel=stylesheet href=/assets/base.css><link rel=stylesheet href=/assets/main.css><link rel=stylesheet href=/assets/chroma.css><body class=darker><nav id=nav></nav><section id=page class=post><aside id=menu><div class="tree-root tree-level-0"><section class=tree-level-1><h3>Linux</h3><ul><li class="tree-child tree-level-2"><a href=/linux/kvm-qemu-in-wsl2/>Kvm Qemu In Wsl2</a></ul><ul><li class="tree-child tree-level-2"><a href=/linux/effective-make/>Effective Make</a></ul></section><section class=tree-level-1><h3>Kubernetes</h3><ul><li class="tree-child tree-level-2"><a href=/kubernetes/kubernetes-dns/>Kubernetes Dns</a></ul></section><section class=tree-level-1><h3>Infrastructure</h3><ul><li class="tree-child tree-level-2"><a href=/infrastructure/immutable-cluster/>Immutable Cluster</a></ul></section><section class=tree-level-1><h3>Container</h3><ul><li class="tree-child tree-level-2"><a href=/container/building-production-grade-container-images/>Building Production Grade Container Images</a></ul><ul><li class="tree-child tree-level-2"><a href=/container/advanced-entrypoint-techniques/>Advanced Entrypoint Techniques</a></ul><ul><li class="tree-child tree-level-2"><a href=/container/docker-sd-and-lb/>Docker Sd And Lb</a></ul></section><section class=tree-level-1><h3>Programming</h3><ul><li class="tree-child tree-level-2"><a href=/programming/bit-flags-in-go/>Bit Flags In Go</a></ul><ul><li class="tree-child tree-level-2"><a href=/programming/opengl-windows-vscode/>Opengl Windows Vscode</a></ul><ul><li class="tree-child tree-level-2"><a href=/programming/python-cheat-sheet/>Python Cheat Sheet</a></ul></section></div></aside><main id=content><nav><ul class=bread-crumbs><li><a href=/>Home</a><li role=separator class=vr>/<li><a href=/programming/>Programming</a><li role=separator class=vr>/<li><a href=/programming/opengl-windows-vscode/>Opengl Windows Vscode</a></ul></nav><article class=post><section class=post-content><h1 id=getting-started-with-opengl-on-windows-using-vscode>Getting Started with OpenGL on Windows using VSCode</h1><p>Settings up OpenGL can be challenging on windows. Most material out suggests to use Visual Studio. However, it is possible to get a setup going using VScode.<h2 id=msys2-setup>MSYS2 Setup</h2><p>First, we install <code>MSYS2</code>, which is similar to mingw or wsl. It gives you a linux type environment. You can download and install it from the <a href=https://www.msys2.org/>official homepage</a>.<h2 id=windows-terminal>Windows Terminal</h2><p>If, you use windows terminal, you might want to open <code>MSYS2</code> with it. The below config. You can add the below profile to your settings.json, to achieve this. I have decided to use ucrt64 but you can do the same for the other environments that come with <code>MSYS2</code> as well. For example you can change <code>-ucrt64</code> for <code>-mingw64</code>.<p>See <a href=https://www.msys2.org/docs/terminals/>the docs</a> for more information.<pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;profiles&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;list&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>            <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;guid&#34;</span><span class=p>:</span> <span class=s2>&#34;{5a352aaa-387b-42c6-a8b3-fbf5c598ef1b}&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;commandline&#34;</span><span class=p>:</span> <span class=s2>&#34;C:\\msys64\\msys2_shell.cmd -defterm -here -no-start -ucrt64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;startingDirectory&#34;</span><span class=p>:</span> <span class=s2>&#34;C:\\msys64\\home\\%USERNAME%&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;icon&#34;</span><span class=p>:</span> <span class=s2>&#34;C:\\msys64\\ucrt64.ico&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;MSYS2&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;hidden&#34;</span><span class=p>:</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre><h2 id=vs-code>VS Code</h2><p>Additionally, you can integrate it into vscode, the below profile integrates also urct64(universal c runtime), but you can do it like for windows terminal for the other environments as well.<pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;terminal.external.windowsExec&#34;</span><span class=p>:</span> <span class=s2>&#34;%USERPROFILE%\\AppData\\Local\\Microsoft\\WindowsApps\\wt.exe&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;terminal.integrated.profiles.windows&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;MSYS2&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;args&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;-defterm&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;-here&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;-no-start&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;-ucrt64&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;path&#34;</span><span class=p>:</span> <span class=s2>&#34;C:\\msys64\\msys2_shell.cmd&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre><h2 id=opengl>OpenGL</h2><p>The basic environment is set. Now we install from the <a href="https://packages.msys2.org/package/?repo=ucrt64">ucrt repo</a> some packages to get OpenGL working. For now <a href=http://freeglut.sourceforge.net/>freeglut</a> will be good enough.<p>Open VSCode and a new terminal <code>MSYS2</code> terminal within, and run the below commands.<pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=c1># update pacman</span>
+</span></span><span class=line><span class=cl>pacman -Syu
+</span></span><span class=line><span class=cl><span class=c1># gcc</span>
+</span></span><span class=line><span class=cl>pacman -S mingw-w64-ucrt-x86_64-gcc
+</span></span><span class=line><span class=cl><span class=c1># glut</span>
+</span></span><span class=line><span class=cl>pacman -S mingw-w64-ucrt-x86_64-freeglut mingw-w64-ucrt-x86_64-glew
+</span></span><span class=line><span class=cl><span class=c1># make</span>
+</span></span><span class=line><span class=cl>pacman -S mingw-w64-ucrt-x86_64-make
+</span></span><span class=line><span class=cl>pacman -S make
+</span></span></code></pre><h2 id=intellisense>Intellisense</h2><p>We can now start our first project. In order to get intellisense working with vscode, I have installed the <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools">c/c++ extension from microsoft</a>.<p>Additionally, I have added the below configuration to <code>.vscode/c_cpp_properties.json</code> inside my workspace. This lets the extension know where to resolve the includes in my c code in order to provide intellisense.<pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;configurations&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;Win32&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;includePath&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;${workspaceFolder}/**&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;C:\\msys64\\ucrt64\\include&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;defines&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;_DEBUG&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;UNICODE&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;_UNICODE&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;cStandard&#34;</span><span class=p>:</span> <span class=s2>&#34;c17&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;cppStandard&#34;</span><span class=p>:</span> <span class=s2>&#34;c++17&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;intelliSenseMode&#34;</span><span class=p>:</span> <span class=s2>&#34;windows-gcc-x64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;compilerPath&#34;</span><span class=p>:</span> <span class=s2>&#34;C:\\msys64\\ucrt64\\bin\\gcc.exe&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;version&#34;</span><span class=p>:</span> <span class=mi>4</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre><h2 id=first-program>First Program</h2><p>We, can create a simply program to test if everything is working. I scraped the below code from the web. All it does is rendering a square. Enough to verify if everything is working.<p>Copy the below content to main.c.<pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;GL/glut.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=kt>void</span> <span class=nf>displayMe</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>glClear</span><span class=p>(</span><span class=n>GL_COLOR_BUFFER_BIT</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glBegin</span><span class=p>(</span><span class=n>GL_POLYGON</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glVertex3f</span><span class=p>(</span><span class=mf>0.0</span><span class=p>,</span> <span class=mf>0.0</span><span class=p>,</span> <span class=mf>0.0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glVertex3f</span><span class=p>(</span><span class=mf>0.5</span><span class=p>,</span> <span class=mf>0.0</span><span class=p>,</span> <span class=mf>0.0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glVertex3f</span><span class=p>(</span><span class=mf>0.5</span><span class=p>,</span> <span class=mf>0.5</span><span class=p>,</span> <span class=mf>0.0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glVertex3f</span><span class=p>(</span><span class=mf>0.0</span><span class=p>,</span> <span class=mf>0.5</span><span class=p>,</span> <span class=mf>0.0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glEnd</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>glFlush</span><span class=p>();</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>main</span><span class=p>(</span><span class=kt>int</span> <span class=n>argc</span><span class=p>,</span> <span class=kt>char</span> <span class=o>**</span><span class=n>argv</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutInit</span><span class=p>(</span><span class=o>&amp;</span><span class=n>argc</span><span class=p>,</span> <span class=n>argv</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutInitDisplayMode</span><span class=p>(</span><span class=n>GLUT_SINGLE</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutInitWindowSize</span><span class=p>(</span><span class=mi>300</span><span class=p>,</span> <span class=mi>300</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutInitWindowPosition</span><span class=p>(</span><span class=mi>100</span><span class=p>,</span> <span class=mi>100</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutCreateWindow</span><span class=p>(</span><span class=s>&#34;SAMPLE TEST&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutDisplayFunc</span><span class=p>(</span><span class=n>displayMe</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>glutMainLoop</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre><p>Finally, we can compile the program. Make sure you link the OpenGL dependencies.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>gcc main.c -lfreeglut -lglew32 -lopengl32
+</span></span></code></pre><p>You can see the program running by executing it via <code>./a.out</code>.<h2 id=conclusion>Conclusion</h2><p>We have setup up a basic environment to work with vscode and OpenGL on windows. Our first program compiled and run successfully. From here, on we can experiment with OpenGL. Have fun.</section><footer class=post-footer><p><span>Nico Braun</span>&nbsp;-&nbsp;<time>June 11, 2022</time><p><a href=#nav class=no-pop>Back to Top</a></footer></article></main><aside id=context><section class=toc><h3>What is on this page?</h3><ul><li><a href=#msys2-setup>MSYS2 Setup</a><li><a href=#windows-terminal>Windows Terminal</a><li><a href=#vs-code>VS Code</a><li><a href=#opengl>OpenGL</a><li><a href=#intellisense>Intellisense</a><li><a href=#first-program>First Program</a><li><a href=#conclusion>Conclusion</a></ul></section><section class=releated><h3>Related</h3><ul><li><a href=/programming/bit-flags-in-go/>Bit Flags In Go
+<small>- Nico Braun</small>
+<small>- June 17, 2023</small></a><li><a href=/programming/python-cheat-sheet/>Python Cheat Sheet
+<small>- Nico Braun</small>
+<small>- June 28, 2019</small></a></ul></section></aside></section><footer id=footer><section id=socials><a href=https://github.com/bluebrown class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M8 0C3.58 0 0 3.582 0 8c0 3.535 2.292 6.533 5.47 7.59.4.075.547-.172.547-.385 0-.19-.007-.693-.01-1.36-2.226.483-2.695-1.073-2.695-1.073-.364-.924-.89-1.17-.89-1.17-.725-.496.056-.486.056-.486.803.056 1.225.824 1.225.824.714 1.223 1.873.87 2.33.665.072-.517.278-.87.507-1.07-1.777-.2-3.644-.888-3.644-3.953 0-.873.31-1.587.823-2.147-.09-.202-.36-1.015.07-2.117 0 0 .67-.215 2.2.82.64-.178 1.32-.266 2-.27.68.004 1.36.092 2 .27 1.52-1.035 2.19-.82 2.19-.82.43 1.102.16 1.915.08 2.117.51.56.82 1.274.82 2.147 0 3.073-1.87 3.75-3.65 3.947.28.24.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.14.46.55.38C13.71 14.53 16 11.53 16 8c0-4.418-3.582-8-8-8" /></svg><span>bluebrown</span></a>
+<a href=https://www.twitter.com/codingsafari class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M16 3.038c-.59.26-1.22.437-1.885.517.677-.407 1.198-1.05 1.443-1.816-.634.37-1.337.64-2.085.79-.598-.64-1.45-1.04-2.396-1.04-1.812 0-3.282 1.47-3.282 3.28 0 .26.03.51.085.75-2.728-.13-5.147-1.44-6.766-3.42C.83 2.58.67 3.14.67 3.75c0 1.14.58 2.143 1.46 2.732-.538-.017-1.045-.165-1.487-.41v.04c0 1.59 1.13 2.918 2.633 3.22-.276.074-.566.114-.865.114-.21 0-.41-.02-.61-.058.42 1.304 1.63 2.253 3.07 2.28-1.12.88-2.54 1.404-4.07 1.404-.26 0-.52-.015-.78-.045 1.46.93 3.18 1.474 5.04 1.474 6.04 0 9.34-5 9.34-9.33 0-.14 0-.28-.01-.42.64-.46 1.2-1.04 1.64-1.7z" /></svg><span>codingsafari</span></a>
+<a href=https://www.linkedin.com/in/nico-braun class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M13.632 13.635h-2.37V9.922c0-.886-.018-2.025-1.234-2.025-1.235 0-1.424.964-1.424 1.96v3.778h-2.37V6H8.51v1.04h.03c.318-.6 1.092-1.233 2.247-1.233 2.4 0 2.845 1.58 2.845 3.637v4.188zM3.558 4.955c-.762 0-1.376-.617-1.376-1.377 0-.758.614-1.375 1.376-1.375.76 0 1.376.617 1.376 1.375 0 .76-.617 1.377-1.376 1.377zm1.188 8.68H2.37V6h2.376v7.635zM14.816 0H1.18C.528 0 0 .516 0 1.153v13.694C0 15.484.528 16 1.18 16h13.635c.652 0 1.185-.516 1.185-1.153V1.153C16 .516 15.467 0 14.815 0z" /></svg><span>nico-braun</span></a>
+<a href=https://stackoverflow.com/users/9208887/the-fool class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M12.566,14.12v-4.08h1.359v5.44H1.686v-5.44h1.36v4.08H12.566z M10.336,0.52L9.269,1.315l3.978,5.358l1.068-0.803 L10.336,0.52z M4.406,12.76h6.8V11.4h-6.8V12.76z M12.158,7.945L7.03,3.675l0.851-1.02l5.128,4.271L12.158,7.945z M5.357,6.646 l6.053,2.815l0.558-1.21L5.916,5.437L5.357,6.64V6.646z M11.227,10.91L4.494,9.774l0.272-1.306l6.549,1.306L11.227,10.91z" /></svg><span>the-fool</span></a></section></footer>

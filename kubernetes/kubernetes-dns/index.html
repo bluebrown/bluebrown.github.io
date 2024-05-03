@@ -1,0 +1,141 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><title>Nico Braun - Kubernetes Dns</title><link rel=icon href=/assets/favicon.ico><link rel=stylesheet href=/assets/base.css><link rel=stylesheet href=/assets/main.css><link rel=stylesheet href=/assets/chroma.css><body class=darker><nav id=nav></nav><section id=page class=post><aside id=menu><div class="tree-root tree-level-0"><section class=tree-level-1><h3>Linux</h3><ul><li class="tree-child tree-level-2"><a href=/linux/kvm-qemu-in-wsl2/>Kvm Qemu In Wsl2</a></ul><ul><li class="tree-child tree-level-2"><a href=/linux/effective-make/>Effective Make</a></ul></section><section class=tree-level-1><h3>Kubernetes</h3><ul><li class="tree-child tree-level-2"><a href=/kubernetes/kubernetes-dns/>Kubernetes Dns</a></ul></section><section class=tree-level-1><h3>Infrastructure</h3><ul><li class="tree-child tree-level-2"><a href=/infrastructure/immutable-cluster/>Immutable Cluster</a></ul></section><section class=tree-level-1><h3>Container</h3><ul><li class="tree-child tree-level-2"><a href=/container/building-production-grade-container-images/>Building Production Grade Container Images</a></ul><ul><li class="tree-child tree-level-2"><a href=/container/advanced-entrypoint-techniques/>Advanced Entrypoint Techniques</a></ul><ul><li class="tree-child tree-level-2"><a href=/container/docker-sd-and-lb/>Docker Sd And Lb</a></ul></section><section class=tree-level-1><h3>Programming</h3><ul><li class="tree-child tree-level-2"><a href=/programming/bit-flags-in-go/>Bit Flags In Go</a></ul><ul><li class="tree-child tree-level-2"><a href=/programming/opengl-windows-vscode/>Opengl Windows Vscode</a></ul><ul><li class="tree-child tree-level-2"><a href=/programming/python-cheat-sheet/>Python Cheat Sheet</a></ul></section></div></aside><main id=content><nav><ul class=bread-crumbs><li><a href=/>Home</a><li role=separator class=vr>/<li><a href=/kubernetes/>Kubernetes</a><li role=separator class=vr>/<li><a href=/kubernetes/kubernetes-dns/>Kubernetes Dns</a></ul></nav><article class=post><section class=post-content><h1 id=kubernetes---dns-resolution>Kubernetes - DNS Resolution</h1><p>You can follow this post with the <a href=https://www.katacoda.com/bluebrown/scenarios/kubernetes-dns>interactive scenario</a> on Katacoda.<p>We are going to explore how DNS resolution in Kubernetes works. First we create a <code>namespace</code>, then we create a <code>pod</code> and <code>expose</code> it via <code>service</code>. Afterwards, a second <code>pod</code> is used to perform DNS queries against the Kubernetes DNS Resolver to get the IP address of the service.<h2 id=namespace>Namespace</h2><p>We create a namespace that we will use to bind our resources.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>kubectl create namespace dev
+</span></span></code></pre><p>Next, we run a pod via imperative command.<h2 id=running-some-pod>Running some Pod</h2><pre tabindex=0 class=chroma><code><span class=line><span class=cl>kubectl run my-app --image nginx --namespace dev --port <span class=m>80</span>
+</span></span></code></pre><h2 id=describe-the-pod>Describe the Pod</h2><pre tabindex=0 class=chroma><code><span class=line><span class=cl>kubectl describe pod my-app -n dev
+</span></span></code></pre><details><pre tabindex=0 class=chroma><code><span class=line><span class=cl>Name:         my-app
+</span></span><span class=line><span class=cl>Namespace:    dev
+</span></span><span class=line><span class=cl>Priority:     <span class=m>0</span>
+</span></span><span class=line><span class=cl>Node:         raspberrypi/192.168.1.41
+</span></span><span class=line><span class=cl>Start Time:   Fri, <span class=m>25</span> Jun <span class=m>2021</span> 01:21:16 +0100
+</span></span><span class=line><span class=cl>Labels:       <span class=nv>run</span><span class=o>=</span>my-app
+</span></span><span class=line><span class=cl>Annotations:  &lt;none&gt;
+</span></span><span class=line><span class=cl>Status:       Running
+</span></span><span class=line><span class=cl>IP:           10.42.0.126
+</span></span><span class=line><span class=cl>IPs:
+</span></span><span class=line><span class=cl>  IP:  10.42.0.126
+</span></span><span class=line><span class=cl>Containers:
+</span></span><span class=line><span class=cl>  my-app:
+</span></span><span class=line><span class=cl>    Container ID:   containerd://086772d833ec67917a98ef43561d6f18779f086daa5b93a3390474a6aa707160
+</span></span><span class=line><span class=cl>    Image:          nginx
+</span></span><span class=line><span class=cl>    Image ID:       docker.io/library/nginx@sha256:47ae43cdfc7064d28800bc42e79a429540c7c80168e8c8952778c0d5af1c09db
+</span></span><span class=line><span class=cl>    Port:           80/TCP
+</span></span><span class=line><span class=cl>    Host Port:      0/TCP
+</span></span><span class=line><span class=cl>    State:          Running
+</span></span><span class=line><span class=cl>      Started:      Fri, <span class=m>25</span> Jun <span class=m>2021</span> 01:21:20 +0100
+</span></span><span class=line><span class=cl>    Ready:          True
+</span></span><span class=line><span class=cl>    Restart Count:  <span class=m>0</span>
+</span></span><span class=line><span class=cl>    Environment:    &lt;none&gt;
+</span></span><span class=line><span class=cl>    Mounts:
+</span></span><span class=line><span class=cl>      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-fnb62 <span class=o>(</span>ro<span class=o>)</span>
+</span></span><span class=line><span class=cl>Conditions:
+</span></span><span class=line><span class=cl>  Type              Status
+</span></span><span class=line><span class=cl>  Initialized       True
+</span></span><span class=line><span class=cl>  Ready             True
+</span></span><span class=line><span class=cl>  ContainersReady   True
+</span></span><span class=line><span class=cl>  PodScheduled      True
+</span></span><span class=line><span class=cl>Volumes:
+</span></span><span class=line><span class=cl>  kube-api-access-fnb62:
+</span></span><span class=line><span class=cl>    Type:                    Projected <span class=o>(</span>a volume that contains injected data from multiple sources<span class=o>)</span>
+</span></span><span class=line><span class=cl>    TokenExpirationSeconds:  <span class=m>3607</span>
+</span></span><span class=line><span class=cl>    ConfigMapName:           kube-root-ca.crt
+</span></span><span class=line><span class=cl>    ConfigMapOptional:       &lt;nil&gt;
+</span></span><span class=line><span class=cl>    DownwardAPI:             <span class=nb>true</span>
+</span></span><span class=line><span class=cl>QoS Class:                   BestEffort
+</span></span><span class=line><span class=cl>Node-Selectors:              &lt;none&gt;
+</span></span><span class=line><span class=cl>Tolerations:                 node.kubernetes.io/not-ready:NoExecute <span class=nv>op</span><span class=o>=</span>Exists <span class=k>for</span> 300s
+</span></span><span class=line><span class=cl>                             node.kubernetes.io/unreachable:NoExecute <span class=nv>op</span><span class=o>=</span>Exists <span class=k>for</span> 300s
+</span></span><span class=line><span class=cl>Events:
+</span></span><span class=line><span class=cl>  Type    Reason     Age   From               Message
+</span></span><span class=line><span class=cl>  ----    ------     ----  ----               -------
+</span></span><span class=line><span class=cl>  Normal  Scheduled  30s   default-scheduler  Successfully assigned dev/my-app to raspberrypi
+</span></span><span class=line><span class=cl>  Normal  Pulling    29s   kubelet            Pulling image <span class=s2>&#34;nginx&#34;</span>
+</span></span><span class=line><span class=cl>  Normal  Pulled     28s   kubelet            Successfully pulled image <span class=s2>&#34;nginx&#34;</span> in 1.369183373s
+</span></span><span class=line><span class=cl>  Normal  Created    28s   kubelet            Created container my-app
+</span></span><span class=line><span class=cl>  Normal  Started    27s   kubelet            Started container my-app
+</span></span></code></pre></details><p>Note the <code>label</code> that has been set by Kubernetes. <code>run=my-app</code> By default, Kubernetes will set labels that match the resource name. For resources started from a <code>run</code> it will have the form <code>run=&lt;resource-name></code>.<p>Now we can <code>expose</code> the pod. This will create a service matching the pods label.<h2 id=create-service>Create Service</h2><pre tabindex=0 class=chroma><code><span class=line><span class=cl>kubectl expose pod my-app --namespace dev
+</span></span></code></pre><h2 id=check-the-service>Check The Service</h2><pre tabindex=0 class=chroma><code><span class=line><span class=cl>kubectl describe service my-app -n dev
+</span></span></code></pre><details><pre tabindex=0 class=chroma><code><span class=line><span class=cl>Name:              my-app
+</span></span><span class=line><span class=cl>Namespace:         dev
+</span></span><span class=line><span class=cl>Labels:            <span class=nv>run</span><span class=o>=</span>my-app
+</span></span><span class=line><span class=cl>Annotations:       &lt;none&gt;
+</span></span><span class=line><span class=cl>Selector:          <span class=nv>run</span><span class=o>=</span>my-app
+</span></span><span class=line><span class=cl>Type:              ClusterIP
+</span></span><span class=line><span class=cl>IP Family Policy:  SingleStack
+</span></span><span class=line><span class=cl>IP Families:       IPv4
+</span></span><span class=line><span class=cl>IP:                10.43.52.98
+</span></span><span class=line><span class=cl>IPs:               10.43.52.98
+</span></span><span class=line><span class=cl>Port:              &lt;unset&gt;  80/TCP
+</span></span><span class=line><span class=cl>TargetPort:        80/TCP
+</span></span><span class=line><span class=cl>Endpoints:         10.42.0.126:80
+</span></span><span class=line><span class=cl>Session Affinity:  None
+</span></span><span class=line><span class=cl>Events:            &lt;none&gt;
+</span></span></code></pre></details><p>Note how the service <code>selector</code> is matching the label <code>run=my-app</code>. That means it will match the pod we have previously deployed.<p>Now we can deploy another pod from which we query the Kubernetes DNS Resolver.<h2 id=run-dnsutils-pod>Run dnsutils Pod</h2><p>We run this pod in interactive mode and attach stdin so that we can use nslookup and dig from within the container to query the Kubernetes DNS Resolver.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>kubectl run dnsutils --namespace dev --image tutum/dnsutils -ti -- bash
+</span></span></code></pre><h2 id=making-dns-queries>Making DNS Queries</h2><p>nslookup resolves the service ok<pre tabindex=0 class=chroma><code><span class=line><span class=cl>nslookup my-app
+</span></span></code></pre><details><pre tabindex=0 class=chroma><code><span class=line><span class=cl>Server:         10.43.0.10
+</span></span><span class=line><span class=cl>Address:        10.43.0.10#53
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Name:   my-app.dev.svc.cluster.local
+</span></span><span class=line><span class=cl>Address: 10.43.52.98
+</span></span></code></pre></details><p>But dig doesn't find the service, why?<pre tabindex=0 class=chroma><code><span class=line><span class=cl>dig my-app
+</span></span></code></pre><details><pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=p>;</span> &lt;&lt;&gt;&gt; DiG 9.11.5-P4-5.1+deb10u5-Debian &lt;&lt;&gt;&gt; my-app
+</span></span><span class=line><span class=cl><span class=p>;;</span> global options: +cmd
+</span></span><span class=line><span class=cl><span class=p>;;</span> Got answer:
+</span></span><span class=line><span class=cl><span class=p>;;</span> -&gt;&gt;HEADER<span class=s>&lt;&lt;- opco</span>de: QUERY, status: NXDOMAIN, id: <span class=m>51094</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> flags: qr aa rd ra<span class=p>;</span> QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>;;</span> OPT PSEUDOSECTION:
+</span></span><span class=line><span class=cl><span class=p>;</span> EDNS: version: 0, flags:<span class=p>;</span> udp: <span class=m>4096</span>
+</span></span><span class=line><span class=cl><span class=p>;</span> COOKIE: 4c23b7d697ed3587 <span class=o>(</span>echoed<span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> QUESTION SECTION:
+</span></span><span class=line><span class=cl><span class=p>;</span>my-app.                                IN      A
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>;;</span> AUTHORITY SECTION:
+</span></span><span class=line><span class=cl>.                       <span class=m>13</span>      IN      SOA     a.root-servers.net. nstld.verisign-grs.com. <span class=m>2021062402</span> <span class=m>1800</span> <span class=m>900</span> <span class=m>604800</span> <span class=m>86400</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>;;</span> Query time: <span class=m>0</span> msec
+</span></span><span class=line><span class=cl><span class=p>;;</span> SERVER: 10.43.0.10#53<span class=o>(</span>10.43.0.10<span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> WHEN: Fri Jun <span class=m>25</span> 01:41:30 UTC <span class=m>2021</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> MSG SIZE  rcvd: <span class=m>122</span>
+</span></span></code></pre></details><h2 id=etcresolvconf>/etc/resolv.conf</h2><p>In order to understand why dig doesn't find the service, let's take a look at /etc/resolv.conf<pre tabindex=0 class=chroma><code><span class=line><span class=cl>cat /etc/resolv.conf
+</span></span></code></pre><details><pre tabindex=0 class=chroma><code><span class=line><span class=cl>search dev.svc.cluster.local svc.cluster.local cluster.local
+</span></span><span class=line><span class=cl>nameserver 10.43.0.10
+</span></span><span class=line><span class=cl>options ndots:5
+</span></span></code></pre></details><p>This file contains a line with the following format.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>search &lt;namespace&gt;.svc.cluster.local svc.cluster.local cluster.local
+</span></span></code></pre><p>That means, when providing an incomplete part of the fully qualified domain name (FQDN), this file can be used to complete the query. However, dig doesn't do it by default. We can use the <code>+search</code> flag in order to enable it.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>dig +search my-app
+</span></span></code></pre><details><pre tabindex=0 class=chroma><code><span class=line><span class=cl><span class=p>;</span> &lt;&lt;&gt;&gt; DiG 9.11.5-P4-5.1+deb10u5-Debian &lt;&lt;&gt;&gt; +search my-app
+</span></span><span class=line><span class=cl><span class=p>;;</span> global options: +cmd
+</span></span><span class=line><span class=cl><span class=p>;;</span> Got answer:
+</span></span><span class=line><span class=cl><span class=p>;;</span> WARNING: .local is reserved <span class=k>for</span> Multicast DNS
+</span></span><span class=line><span class=cl><span class=p>;;</span> You are currently testing what happens when an mDNS query is leaked to DNS
+</span></span><span class=line><span class=cl><span class=p>;;</span> -&gt;&gt;HEADER<span class=s>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span class=m>39376</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> flags: qr aa rd<span class=p>;</span> QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: <span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> WARNING: recursion requested but not available
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>;;</span> OPT PSEUDOSECTION:
+</span></span><span class=line><span class=cl><span class=p>;</span> EDNS: version: 0, flags:<span class=p>;</span> udp: <span class=m>4096</span>
+</span></span><span class=line><span class=cl><span class=p>;</span> COOKIE: de26c4eaa4e53026 <span class=o>(</span>echoed<span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> QUESTION SECTION:
+</span></span><span class=line><span class=cl><span class=p>;</span>my-app.dev.svc.cluster.local.  IN      A
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>;;</span> ANSWER SECTION:
+</span></span><span class=line><span class=cl>my-app.dev.svc.cluster.local. <span class=m>5</span> IN      A       10.43.52.98
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>;;</span> Query time: <span class=m>0</span> msec
+</span></span><span class=line><span class=cl><span class=p>;;</span> SERVER: 10.43.0.10#53<span class=o>(</span>10.43.0.10<span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> WHEN: Fri Jun <span class=m>25</span> 01:42:34 UTC <span class=m>2021</span>
+</span></span><span class=line><span class=cl><span class=p>;;</span> MSG SIZE  rcvd: <span class=m>113</span>
+</span></span></code></pre></details><p>Now the service-name has been correctly resolved.<p>We can get the same service without <code>+search</code> flag when using the FQDN. The <code>+short</code> flag isn't required, but it will reduce the output to only the IP address.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>$ dig +short my-app.dev.svc.cluster.local
+</span></span><span class=line><span class=cl>10.43.52.98
+</span></span></code></pre><p>However, the benefit of using the <code>search</code> method it that queries will automatically resolve to resources within the same namespace. This can be useful to apply the same configuration to different environments, such as production and development.<p>Resources in different namespaces always need to be looked up by the FQDN.<p>The same way the search entry in <code>resolv.conf</code> completes the query with the default name space, it will complete any part of the <code>FQDN</code> from left to right. So in the below example, it will resolve to the local cluster.<pre tabindex=0 class=chroma><code><span class=line><span class=cl>$ dig +short +search my-app.dev
+</span></span><span class=line><span class=cl>10.43.52.98
+</span></span></code></pre></section><footer class=post-footer><p><span>Nico Braun</span>&nbsp;-&nbsp;<time>June 25, 2021</time><p><a href=#nav class=no-pop>Back to Top</a></footer></article></main><aside id=context><section class=toc><h3>What is on this page?</h3><ul><li><a href=#namespace>Namespace</a><li><a href=#running-some-pod>Running some Pod</a><li><a href=#describe-the-pod>Describe the Pod</a><li><a href=#create-service>Create Service</a><li><a href=#check-the-service>Check The Service</a><li><a href=#run-dnsutils-pod>Run dnsutils Pod</a><li><a href=#making-dns-queries>Making DNS Queries</a><li><a href=#etcresolvconf>/etc/resolv.conf</a></ul></section></aside></section><footer id=footer><section id=socials><a href=https://github.com/bluebrown class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M8 0C3.58 0 0 3.582 0 8c0 3.535 2.292 6.533 5.47 7.59.4.075.547-.172.547-.385 0-.19-.007-.693-.01-1.36-2.226.483-2.695-1.073-2.695-1.073-.364-.924-.89-1.17-.89-1.17-.725-.496.056-.486.056-.486.803.056 1.225.824 1.225.824.714 1.223 1.873.87 2.33.665.072-.517.278-.87.507-1.07-1.777-.2-3.644-.888-3.644-3.953 0-.873.31-1.587.823-2.147-.09-.202-.36-1.015.07-2.117 0 0 .67-.215 2.2.82.64-.178 1.32-.266 2-.27.68.004 1.36.092 2 .27 1.52-1.035 2.19-.82 2.19-.82.43 1.102.16 1.915.08 2.117.51.56.82 1.274.82 2.147 0 3.073-1.87 3.75-3.65 3.947.28.24.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.14.46.55.38C13.71 14.53 16 11.53 16 8c0-4.418-3.582-8-8-8" /></svg><span>bluebrown</span></a>
+<a href=https://www.twitter.com/codingsafari class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M16 3.038c-.59.26-1.22.437-1.885.517.677-.407 1.198-1.05 1.443-1.816-.634.37-1.337.64-2.085.79-.598-.64-1.45-1.04-2.396-1.04-1.812 0-3.282 1.47-3.282 3.28 0 .26.03.51.085.75-2.728-.13-5.147-1.44-6.766-3.42C.83 2.58.67 3.14.67 3.75c0 1.14.58 2.143 1.46 2.732-.538-.017-1.045-.165-1.487-.41v.04c0 1.59 1.13 2.918 2.633 3.22-.276.074-.566.114-.865.114-.21 0-.41-.02-.61-.058.42 1.304 1.63 2.253 3.07 2.28-1.12.88-2.54 1.404-4.07 1.404-.26 0-.52-.015-.78-.045 1.46.93 3.18 1.474 5.04 1.474 6.04 0 9.34-5 9.34-9.33 0-.14 0-.28-.01-.42.64-.46 1.2-1.04 1.64-1.7z" /></svg><span>codingsafari</span></a>
+<a href=https://www.linkedin.com/in/nico-braun class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M13.632 13.635h-2.37V9.922c0-.886-.018-2.025-1.234-2.025-1.235 0-1.424.964-1.424 1.96v3.778h-2.37V6H8.51v1.04h.03c.318-.6 1.092-1.233 2.247-1.233 2.4 0 2.845 1.58 2.845 3.637v4.188zM3.558 4.955c-.762 0-1.376-.617-1.376-1.377 0-.758.614-1.375 1.376-1.375.76 0 1.376.617 1.376 1.375 0 .76-.617 1.377-1.376 1.377zm1.188 8.68H2.37V6h2.376v7.635zM14.816 0H1.18C.528 0 0 .516 0 1.153v13.694C0 15.484.528 16 1.18 16h13.635c.652 0 1.185-.516 1.185-1.153V1.153C16 .516 15.467 0 14.815 0z" /></svg><span>nico-braun</span></a>
+<a href=https://stackoverflow.com/users/9208887/the-fool class="social-link no-pop"><svg class="social-icon">
+<path
+  d="M12.566,14.12v-4.08h1.359v5.44H1.686v-5.44h1.36v4.08H12.566z M10.336,0.52L9.269,1.315l3.978,5.358l1.068-0.803 L10.336,0.52z M4.406,12.76h6.8V11.4h-6.8V12.76z M12.158,7.945L7.03,3.675l0.851-1.02l5.128,4.271L12.158,7.945z M5.357,6.646 l6.053,2.815l0.558-1.21L5.916,5.437L5.357,6.64V6.646z M11.227,10.91L4.494,9.774l0.272-1.306l6.549,1.306L11.227,10.91z" /></svg><span>the-fool</span></a></section></footer>
