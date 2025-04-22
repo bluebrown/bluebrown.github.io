@@ -6,8 +6,8 @@ SHELL = /usr/bin/env bash
 ##@ Options
 
 GITHUB_SHA ?= $(shell git rev-parse main)
-DOKTRI_AUTHROR ?= Nico Braun
-DOKTRI_CHROMA_STYLE ?= dracula
+DOKTRI_AUTHROR ?=
+DOKTRI_CHROMA_STYLE ?=
 
 export DOKTRI_AUTHROR DOKTRI_CHROMA_STYLE
 
