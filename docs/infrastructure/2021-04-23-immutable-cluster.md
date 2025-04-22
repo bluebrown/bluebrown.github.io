@@ -1,16 +1,39 @@
+---
+author: Nico Braun
+tags: [automation, aws, terraform, packer, ansible]
+---
+
+
 # Immutable Infrastructure in AWS with Packer, Ansible and Terraform
 
-> Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
+> Immutable infrastructure is an approach to managing services and
+> software deployments on IT resources wherein components are replaced
+> rather than changed. An application or services is effectively
+> redeployed each time any change occurs.
 
-In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. You can find the full working code in github <https://github.com/bluebrown/immutable-cluster>.
+In this post I am going to show how one can create a workflow based in
+the idea of immutable infrastructure. You can find the full working code
+in github <https://github.com/bluebrown/immutable-cluster>.
 
 ## The Recipe
 
-Since the goal is to simply replace the instance on each application release, we want to create a machine image containing the application. This way we can swap out the whole instance quickly without further installation steps after provisioning. This is sometimes called a [golden image](https://opensource.com/article/19/7/what-golden-image). We are going to use [Packer](https://www.packer.io/) & [Ansible](https://www.ansible.com/) for this.
+Since the goal is to simply replace the instance on each application
+release, we want to create a machine image containing the application.
+This way we can swap out the whole instance quickly without further
+installation steps after provisioning. This is sometimes called a
+[golden image](https://opensource.com/article/19/7/what-golden-image).
+We are going to use [Packer](https://www.packer.io/) &
+[Ansible](https://www.ansible.com/) for this.
 
-Further, we want to manage our infrastructure as code. [Terraform](https://www.terraform.io/) is a good choice for this. It can create, change and destroy infrastructure remotely and keeps track of the current state of our system.
+Further, we want to manage our infrastructure as code.
+[Terraform](https://www.terraform.io/) is a good choice for this. It can
+create, change and destroy infrastructure remotely and keeps track of
+the current state of our system.
 
- With a golden image and infrastructure as code, we can throw away the complete environment, in this case the vpc with instances, and create a new one within minutes if we wish. Usually we only want to swap the instances though.
+ With a golden image and infrastructure as code, we can throw away the
+ complete environment, in this case the vpc with instances, and create a
+ new one within minutes if we wish. Usually we only want to swap the
+ instances though.
 
 ## Prerequisites
 
@@ -24,15 +47,21 @@ To follow along you need:
 
 ## Creating a Custom Image with Packer
 
-**If you are using a custom vpc, make sure to configure [Packer](https://www.packer.io/) to use a subnet with automatic public ip assignment and a route to the internet gateway.**
+**If you are using a custom vpc, make sure to configure
+[Packer](https://www.packer.io/) to use a subnet with automatic public
+ip assignment and a route to the internet gateway.**
 
 ### Packer File
 
-First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create.
+First we create a [Packer](https://www.packer.io/) file with some
+information about the image we want to create.
 
-Most importantly We specify the `region`. By default our `AMI` will only be available in this `region`.
+Most importantly We specify the `region`. By default our `AMI` will only
+be available in this `region`.
 
-We specify [Ansible](https://www.ansible.com/) as provisioner. It will execute the `playbook` on the temporary instance to apply additional configuration.
+We specify [Ansible](https://www.ansible.com/) as provisioner. It will
+execute the `playbook` on the temporary instance to apply additional
+configuration.
 
 ```go
 variable "aws_access_key" {
@@ -69,9 +98,13 @@ build {
 
 ### Ansible Playbook
 
-Once [Packer](https://www.packer.io/) has created the temporary instance, we use [Ansible](https://www.ansible.com/) to apply additional configuration.
+Once [Packer](https://www.packer.io/) has created the temporary
+instance, we use [Ansible](https://www.ansible.com/) to apply additional
+configuration.
 
-The playbook tells ansible to install and enable the nginx service. The result will be `nginx` serving the default page on port 80 when the `instance` is booted.
+The playbook tells ansible to install and enable the nginx service. The
+result will be `nginx` serving the default page on port 80 when the
+`instance` is booted.
 
 ```yml
 ---
@@ -107,7 +140,8 @@ The playbook tells ansible to install and enable the nginx service. The result w
 
 ### Build
 
-With the 2 configuration files we can validate the input and build our custom `AMI` in [AWS](https://aws.amazon.com/).
+With the 2 configuration files we can validate the input and build our
+custom `AMI` in [AWS](https://aws.amazon.com/).
 
 ```shell
 packer validate .
@@ -116,7 +150,9 @@ packer build .
 
 ### The AMI
 
-Once the process is completed, we can use the [AWS CLI](https://aws.amazon.com/cli/) to inspect the created `AMI` and find the `ImageId`.
+Once the process is completed, we can use the [AWS
+CLI](https://aws.amazon.com/cli/) to inspect the created `AMI` and find
+the `ImageId`.
 
 ```json
 $ aws ec2 describe-images --owner self --region eu-central-1
@@ -159,7 +195,9 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 
 ## Deploying the Infrastructure with Terraform
 
-Now we have our custom `AMI` in the `eu-central-1` region. Next we will use [Terraform](https://www.terraform.io/) to deploy this image together with the required infrastructure.
+Now we have our custom `AMI` in the `eu-central-1` region. Next we will
+use [Terraform](https://www.terraform.io/) to deploy this image together
+with the required infrastructure.
 
 ![image of infrastructure with elb](https://user-images.githubusercontent.com/39703898/115515253-dc43b000-a27c-11eb-8c96-b7fd705b7a9f.png)
 
@@ -259,9 +297,11 @@ resource "aws_subnet" "b" {
 
 Next, we create the `security groups`.
 
-The default security group has only a reference to itself. It is used to allow traffic to flow between the `ALB` and its `targets`.
+The default security group has only a reference to itself. It is used to
+allow traffic to flow between the `ALB` and its `targets`.
 
-The second `security group` is to allow tcp traffic from the public web to the `ALB` on port 80(HTTP) and 443 (HTTPS).
+The second `security group` is to allow tcp traffic from the public web
+to the `ALB` on port 80(HTTP) and 443 (HTTPS).
 
 ```go
 resource "aws_default_security_group" "internal" {
@@ -327,7 +367,8 @@ resource "aws_security_group" "web" {
 
 ### Logging
 
-We are going to create an `S3 bucket` with the required access `policy` to use it as log destination for the `ALB` in the next section.
+We are going to create an `S3 bucket` with the required access `policy`
+to use it as log destination for the `ALB` in the next section.
 
 ```go
 resource "aws_s3_bucket" "logs" {
@@ -393,15 +434,24 @@ resource "aws_s3_bucket_policy" "logs" {
 
 ### Load balancing
 
-Next, an application load balancer (ALB) is created with a 2 `listeners`.
+Next, an application load balancer (ALB) is created with a 2
+`listeners`.
 
-The first `listener` will listen on port 80 and redirect the traffic to port 443.
+The first `listener` will listen on port 80 and redirect the traffic to
+port 443.
 
-The second  `listener` will serve a tls certificate, that is imported from `ACM`, on port 443. After the `TLS handshake` it will forward the traffic over http on port 80 to the target group, also known asl `TLS Termination`.
+The second  `listener` will serve a tls certificate, that is imported
+from `ACM`, on port 443. After the `TLS handshake` it will forward the
+traffic over http on port 80 to the target group, also known asl `TLS
+Termination`.
 
-I am assuming that you have already uploaded your own cert or that you have issued one with ACM. There [a branch without tls](https://github.com/bluebrown/immutable-cluster/tree/no-tls) in this repo.
+I am assuming that you have already uploaded your own cert or that you
+have issued one with ACM. There [a branch without
+tls](https://github.com/bluebrown/immutable-cluster/tree/no-tls) in this
+repo.
 
-The `target group` will be populated by the `auto scaling group` in the next section.
+The `target group` will be populated by the `auto scaling group` in the
+next section.
 
 ```go
 resource "aws_lb" "web" {
@@ -465,11 +515,16 @@ resource "aws_lb_listener" "websecure" {
 
 ### Autoscaling
 
-Lastly, we create a launch template and auto scaling group to launch new instances of the custom `AMI`.
+Lastly, we create a launch template and auto scaling group to launch new
+instances of the custom `AMI`.
 
-We will require a minimum of 2 instances with a desired count of 2 instances. Optionally we allow to scale up to 4 instances if instances reach their resource limit.
+We will require a minimum of 2 instances with a desired count of 2
+instances. Optionally we allow to scale up to 4 instances if instances
+reach their resource limit.
 
-The `strategy` of the `placement group` is set to `partition` which means that the instances should get spread across the racks in the physical data centers.
+The `strategy` of the `placement group` is set to `partition` which
+means that the instances should get spread across the racks in the
+physical data centers.
 
 ```go
 resource "aws_placement_group" "web" {
@@ -510,15 +565,19 @@ resource "aws_autoscaling_attachment" "web" {
 
 ## Deploy
 
-Now we can deploy the infrastructure. Run `terraform apply` and confirm the prompt. The process will take a couple minutes until all the resources are created and ready.
+Now we can deploy the infrastructure. Run `terraform apply` and confirm
+the prompt. The process will take a couple minutes until all the
+resources are created and ready.
 
 ```shell
 terraform apply
 ```
 
-You can use [AWS CLI](https://aws.amazon.com/cli/) to see if the targets of the load balancer are *healthy*.
+You can use [AWS CLI](https://aws.amazon.com/cli/) to see if the targets
+of the load balancer are *healthy*.
 
-They may not be ready yet. If that is the case, just wait a couple minutes and check again.
+They may not be ready yet. If that is the case, just wait a couple
+minutes and check again.
 
 ```shell
 $ arn=$(aws elbv2 describe-target-groups --name web-tg --query "TargetGroups[0].TargetGroupArn" --output text)
@@ -549,7 +608,10 @@ $ aws elbv2 describe-target-health --target-group-arn "$arn"
 }
 ```
 
-Once the targets are marked as healthy, we need to point a `CNAME record` from our domain to the `ELB DNS`. I am managing my certificate with `Linode`, so I will give an example of how to do it via [linode-cli](https://www.linode.com/docs/guides/linode-cli/).
+Once the targets are marked as healthy, we need to point a `CNAME
+record` from our domain to the `ELB DNS`. I am managing my certificate
+with `Linode`, so I will give an example of how to do it via
+[linode-cli](https://www.linode.com/docs/guides/linode-cli/).
 
 ```shell
 dns=$(aws elbv2 describe-load-balancers --name "packer-nginx" --query "LoadBalancers[0].DNSName" --output text)
@@ -562,9 +624,12 @@ You can now visit the url in your browse under the configured subdomain.
 
 Thats it!
 
-The application is deployed from a custom `AMI` across 2 `availability zones` and utilizing `autoscaling`. The traffic is routed via `ELB` which also performs `TLS Termination`.
+The application is deployed from a custom `AMI` across 2 `availability
+zones` and utilizing `autoscaling`. The traffic is routed via `ELB`
+which also performs `TLS Termination`.
 
-Additionally, e have our whole infrastructure as code which we can source control.
+Additionally, e have our whole infrastructure as code which we can
+source control.
 
 ## Cleaning Up
 
@@ -574,7 +639,9 @@ In order to avoid cost, lets remove all created resources.
 terraform destroy
 ```
 
-Since the AMI and snapshot was not created with [Terraform](https://www.terraform.io/), it wont be destroyed by the former command. We are going to remove them via CLI.
+Since the AMI and snapshot was not created with
+[Terraform](https://www.terraform.io/), it wont be destroyed by the
+former command. We are going to remove them via CLI.
 
 ### Deregister Image
 

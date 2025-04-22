@@ -1,10 +1,14 @@
 # Advanced Entrypoint Techniques for Docker Container
 
-Building good images can be challenging. We want to provide enough abstraction and flexibility for the image to be used in different scenarios without having to rebuild them in every case. We also want to make it easy for users to use the image.
+Building good images can be challenging. We want to provide enough
+abstraction and flexibility for the image to be used in different
+scenarios without having to rebuild them in every case. We also want to
+make it easy for users to use the image.
 
 ## CMD
 
-When building docker images, it is oftentimes enough to use normal commands to start the container.
+When building docker images, it is oftentimes enough to use normal
+commands to start the container.
 
 ```dockerfile
 FROM alpine
@@ -13,7 +17,8 @@ CMD ["echo", "Hello, world!"]
 
 ## Entrypoint
 
-Occasionally, an additional entry point is used. When written like this, it is mostly for convenience, but there are some elaborate use cases.
+Occasionally, an additional entry point is used. When written like this,
+it is mostly for convenience, but there are some elaborate use cases.
 
 ```dockerfile
 FROM alpine
@@ -23,7 +28,10 @@ CMD ["Hello, world!"]
 
 ## Entrypoint Script
 
-Sometimes, we really need to do more work or operate on environment variables, which can be tricky due to the difference in shell and exec syntax in the Dockerfile. In that case, a script commonly called `entrypoint.sh` or `docker-entrypoint.sh` is executed as entrypoint.
+Sometimes, we really need to do more work or operate on environment
+variables, which can be tricky due to the difference in shell and exec
+syntax in the Dockerfile. In that case, a script commonly called
+`entrypoint.sh` or `docker-entrypoint.sh` is executed as entrypoint.
 
 ```dockerfile
 FROM alpine
@@ -41,11 +49,14 @@ sleep $WORKER_SLEEP
 echo 'Hello, World!'
 ```
 
-The `set -e` tells the shell to abort on first error. You can also set the `-x` flag to see the *execution plan*.
+The `set -e` tells the shell to abort on first error. You can also set
+the `-x` flag to see the *execution plan*.
 
 ## Entrypoint Script with CMD
 
-It is possible to still take the command list as arguments and access them in the script with the standard shell variables. Here, the CMD is executed via `exec $@` at the end of the `entrypoint.sh`.
+It is possible to still take the command list as arguments and access
+them in the script with the standard shell variables. Here, the CMD is
+executed via `exec $@` at the end of the `entrypoint.sh`.
 
 ```dockerfile
 FROM alpine
@@ -64,15 +75,22 @@ sleep $WORKER_SLEEP
 exec $@
 ```
 
-`$@` stands for the complete argument list. While the individual positional arguments can be accessed by `$n` where `n` stands for the arguments position in the list. e.g. `$1`, `$2`.
+`$@` stands for the complete argument list. While the individual
+positional arguments can be accessed by `$n` where `n` stands for the
+arguments position in the list. e.g. `$1`, `$2`.
 
 Another benefit is that the final application will become PID 1.
 
-> This script uses the exec Bash command so that the final running application becomes the container’s PID 1. This allows the application to receive any Unix signals sent to the container. For more, see the ENTRYPOINT reference.
+> This script uses the exec Bash command so that the final running
+> application becomes the container’s PID 1. This allows the application
+> to receive any Unix signals sent to the container. For more, see the
+> ENTRYPOINT reference.
 
 ## Preserving Entrypoint Behavior
 
-The argument list can be used in different way. So it doesn't only work with `exec`. Below the arguments are used like in the early entry point example but only after performing the work.
+The argument list can be used in different way. So it doesn't only work
+with `exec`. Below the arguments are used like in the early entry point
+example but only after performing the work.
 
 ```dockerfile
 FROM alpine
@@ -91,13 +109,20 @@ sleep $WORKER_SLEEP
 echo "$@"
 ```
 
-Note how instead of `exec $@` it is `echo $@` so anything that was passed to as `command` will get echoed. You can also use `exec echo "$@"` which would run the `echo` command with PID 1 again.
+Note how instead of `exec $@` it is `echo $@` so anything that was
+passed to as `command` will get echoed. You can also use `exec echo
+"$@"` which would run the `echo` command with PID 1 again.
 
 ## Shifting the Arguments
 
-When building software for other people to use, it is always a good idea to anticipate all sorts of *misuse*. With entrypoint-scripts, it can be a good idea to leverage `shift` to correct the users *mistakes*.
+When building software for other people to use, it is always a good idea
+to anticipate all sorts of *misuse*. With entrypoint-scripts, it can be
+a good idea to leverage `shift` to correct the users *mistakes*.
 
-The `Dockerfile` stays the same, but now we are checking if the first argument is `echo` and if so we remove if by shifting the argument list. `Shift` removes the first argument from the left and shifts the indices of the remaining arguments to the left.
+The `Dockerfile` stays the same, but now we are checking if the first
+argument is `echo` and if so we remove if by shifting the argument list.
+`Shift` removes the first argument from the left and shifts the indices
+of the remaining arguments to the left.
 
 ```shell
 #!/bin/sh
@@ -117,7 +142,9 @@ docker run my-image echo Hello, World!
 
 ## Real World Example
 
-You can look at various official docker repos. For example, the official [nginx docker image on GitHub](https://github.com/nginxinc/docker-nginx/blob/master/entrypoint/docker-entrypoint.sh).
+You can look at various official docker repos. For example, the official
+[nginx docker image on
+GitHub](https://github.com/nginxinc/docker-nginx/blob/master/entrypoint/docker-entrypoint.sh).
 
 <details>
 <summary>Nginx Entrypoint</summary>
@@ -165,9 +192,13 @@ exec "$@"
 
 </details>
 
-Another interesting one is from mongo db. It is fairly complex, with almost 400 lines. You can see the [full script](https://github.com/docker-library/mongo/blob/master/docker-entrypoint.sh) on GitHub.
+Another interesting one is from mongo db. It is fairly complex, with
+almost 400 lines. You can see the [full
+script](https://github.com/docker-library/mongo/blob/master/docker-entrypoint.sh)
+on GitHub.
 
-It contains, amongst various others, a function using the shift method described earlier.
+It contains, amongst various others, a function using the shift method
+described earlier.
 
 <details>
 <summary>Shift Function</summary>

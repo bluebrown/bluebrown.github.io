@@ -1,8 +1,14 @@
 # Kubernetes - DNS Resolution
 
-You can follow this post with the [interactive scenario](https://www.katacoda.com/bluebrown/scenarios/kubernetes-dns) on Katacoda.
+You can follow this post with the [interactive
+scenario](https://www.katacoda.com/bluebrown/scenarios/kubernetes-dns)
+on Katacoda.
 
-We are going to explore how DNS resolution in Kubernetes works. First we create a `namespace`, then we create a `pod` and `expose` it via `service`. Afterwards, a second `pod` is used to perform DNS queries against the Kubernetes DNS Resolver to get the IP address of the service.
+We are going to explore how DNS resolution in Kubernetes works. First we
+create a `namespace`, then we create a `pod` and `expose` it via
+`service`. Afterwards, a second `pod` is used to perform DNS queries
+against the Kubernetes DNS Resolver to get the IP address of the
+service.
 
 ## Namespace
 
@@ -83,9 +89,13 @@ Events:
 
 </details>
 
-Note the `label` that has been set by Kubernetes. `run=my-app` By default, Kubernetes will set labels that match the resource name. For resources started from a `run` it will have the form `run=<resource-name>`.
+Note the `label` that has been set by Kubernetes. `run=my-app` By
+default, Kubernetes will set labels that match the resource name. For
+resources started from a `run` it will have the form
+`run=<resource-name>`.
 
-Now we can `expose` the pod. This will create a service matching the pods label.
+Now we can `expose` the pod. This will create a service matching the
+pods label.
 
 ## Create Service
 
@@ -121,13 +131,17 @@ Events:            <none>
 
 </details>
 
-Note how the service `selector` is matching the label `run=my-app`. That means it will match the pod we have previously deployed.
+Note how the service `selector` is matching the label `run=my-app`. That
+means it will match the pod we have previously deployed.
 
-Now we can deploy another pod from which we query the Kubernetes DNS Resolver.
+Now we can deploy another pod from which we query the Kubernetes DNS
+Resolver.
 
 ## Run dnsutils Pod
 
-We run this pod in interactive mode and attach stdin so that we can use nslookup and dig from within the container to query the Kubernetes DNS Resolver.
+We run this pod in interactive mode and attach stdin so that we can use
+nslookup and dig from within the container to query the Kubernetes DNS
+Resolver.
 
 ```shell
 kubectl run dnsutils --namespace dev --image tutum/dnsutils -ti -- bash
@@ -187,7 +201,8 @@ dig my-app
 
 ## /etc/resolv.conf
 
-In order to understand why dig doesn't find the service, let's take a look at /etc/resolv.conf
+In order to understand why dig doesn't find the service, let's take a
+look at /etc/resolv.conf
 
 ```shell
 cat /etc/resolv.conf
@@ -209,7 +224,10 @@ This file contains a line with the following format.
 search <namespace>.svc.cluster.local svc.cluster.local cluster.local
 ```
 
-That means, when providing an incomplete part of the fully qualified domain name (FQDN), this file can be used to complete the query. However, dig doesn't do it by default. We can use the `+search` flag in order to enable it.
+That means, when providing an incomplete part of the fully qualified
+domain name (FQDN), this file can be used to complete the query.
+However, dig doesn't do it by default. We can use the `+search` flag in
+order to enable it.
 
 ```shell
 dig +search my-app
@@ -246,18 +264,27 @@ my-app.dev.svc.cluster.local. 5 IN      A       10.43.52.98
 
 Now the service-name has been correctly resolved.
 
-We can get the same service without `+search` flag when using the FQDN. The `+short` flag isn't required, but it will reduce the output to only the IP address.
+We can get the same service without `+search` flag when using the FQDN.
+The `+short` flag isn't required, but it will reduce the output to only
+the IP address.
 
 ```shell
 $ dig +short my-app.dev.svc.cluster.local
 10.43.52.98
 ```
 
-However, the benefit of using the `search` method it that queries will automatically resolve to resources within the same namespace. This can be useful to apply the same configuration to different environments, such as production and development.
+However, the benefit of using the `search` method it that queries will
+automatically resolve to resources within the same namespace. This can
+be useful to apply the same configuration to different environments,
+such as production and development.
 
-Resources in different namespaces always need to be looked up by the FQDN.
+Resources in different namespaces always need to be looked up by the
+FQDN.
 
-The same way the search entry in `resolv.conf` completes the query with the default name space, it will complete any part of the `FQDN` from left to right. So in the below example, it will resolve to the local cluster.
+The same way the search entry in `resolv.conf` completes the query with
+the default name space, it will complete any part of the `FQDN` from
+left to right. So in the below example, it will resolve to the local
+cluster.
 
 ```shell
 $ dig +short +search my-app.dev

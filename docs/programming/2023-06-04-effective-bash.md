@@ -1,7 +1,7 @@
 # Effective Bash
 
-This post contains a loose collection of useful stuff when it comes to bash
-scripting.
+This post contains a loose collection of useful stuff when it comes to
+bash scripting.
 
 ## Shebang
 

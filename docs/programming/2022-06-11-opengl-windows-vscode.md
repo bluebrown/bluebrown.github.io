@@ -1,14 +1,22 @@
 # Getting Started with OpenGL on Windows using VSCode
 
-Settings up OpenGL can be challenging on windows. Most material out suggests to use Visual Studio. However, it is possible to get a setup going using VScode.
+Settings up OpenGL can be challenging on windows. Most material out
+suggests to use Visual Studio. However, it is possible to get a setup
+going using VScode.
 
 ## MSYS2 Setup
 
-First, we install `MSYS2`, which is similar to mingw or wsl. It gives you a linux type environment. You can download and install it from the [official homepage](https://www.msys2.org/).
+First, we install `MSYS2`, which is similar to mingw or wsl. It gives
+you a linux type environment. You can download and install it from the
+[official homepage](https://www.msys2.org/).
 
 ## Windows Terminal
 
-If, you use windows terminal, you might want to open `MSYS2` with it. The below config. You can add the below profile to your settings.json, to achieve this. I have decided to use ucrt64 but you can do the same for the other environments that come with `MSYS2` as well. For example you can change `-ucrt64` for `-mingw64`.
+If, you use windows terminal, you might want to open `MSYS2` with it.
+The below config. You can add the below profile to your settings.json,
+to achieve this. I have decided to use ucrt64 but you can do the same
+for the other environments that come with `MSYS2` as well. For example
+you can change `-ucrt64` for `-mingw64`.
 
 See [the docs](https://www.msys2.org/docs/terminals/) for more information.
 
@@ -31,7 +39,9 @@ See [the docs](https://www.msys2.org/docs/terminals/) for more information.
 
 ## VS Code
 
-Additionally, you can integrate it into vscode, the below profile integrates also urct64(universal c runtime), but you can do it like for windows terminal for the other environments as well.
+Additionally, you can integrate it into vscode, the below profile
+integrates also urct64(universal c runtime), but you can do it like for
+windows terminal for the other environments as well.
 
 ```json
 {
@@ -52,9 +62,13 @@ Additionally, you can integrate it into vscode, the below profile integrates als
 
 ## OpenGL
 
-The basic environment is set. Now we install from the [ucrt repo](https://packages.msys2.org/package/?repo=ucrt64) some packages to get OpenGL working. For now [freeglut](http://freeglut.sourceforge.net/) will be good enough.
+The basic environment is set. Now we install from the [ucrt
+repo](https://packages.msys2.org/package/?repo=ucrt64) some packages to
+get OpenGL working. For now [freeglut](http://freeglut.sourceforge.net/)
+will be good enough.
 
-Open VSCode and a new terminal `MSYS2` terminal within, and run the below commands.
+Open VSCode and a new terminal `MSYS2` terminal within, and run the
+below commands.
 
 ```bash
 # update pacman
@@ -70,9 +84,14 @@ pacman -S make
 
 ## Intellisense
 
-We can now start our first project. In order to get intellisense working with vscode, I have installed the [c/c++ extension from microsoft](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools).
+We can now start our first project. In order to get intellisense working
+with vscode, I have installed the [c/c++ extension from
+microsoft](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools).
 
-Additionally, I have added the below configuration to `.vscode/c_cpp_properties.json` inside my workspace. This lets the extension know where to resolve the includes in my c code in order to provide intellisense.
+Additionally, I have added the below configuration to
+`.vscode/c_cpp_properties.json` inside my workspace. This lets the
+extension know where to resolve the includes in my c code in order to
+provide intellisense.
 
 ```json
 {
@@ -100,7 +119,9 @@ Additionally, I have added the below configuration to `.vscode/c_cpp_properties.
 
 ## First Program
 
-We, can create a simply program to test if everything is working. I scraped the below code from the web. All it does is rendering a square. Enough to verify if everything is working.
+We, can create a simply program to test if everything is working. I
+scraped the below code from the web. All it does is rendering a square.
+Enough to verify if everything is working.
 
 Copy the below content to main.c.
 
@@ -132,7 +153,8 @@ int main(int argc, char **argv)
 }
 ```
 
-Finally, we can compile the program. Make sure you link the OpenGL dependencies.
+Finally, we can compile the program. Make sure you link the OpenGL
+dependencies.
 
 ```bash
 gcc main.c -lfreeglut -lglew32 -lopengl32
@@ -142,4 +164,6 @@ You can see the program running by executing it via `./a.out`.
 
 ## Conclusion
 
-We have setup up a basic environment to work with vscode and OpenGL on windows. Our first program compiled and run successfully. From here, on we can experiment with OpenGL. Have fun.
+We have setup up a basic environment to work with vscode and OpenGL on
+windows. Our first program compiled and run successfully. From here, on
+we can experiment with OpenGL. Have fun.

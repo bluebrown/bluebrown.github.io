@@ -39,8 +39,7 @@ int main() {
 The main file is able to use the opaque type without knowing its
 implementation.
 
-One possible impkemnentation for `log.c` might look like
-the below.
+One possible impkemnentation for `log.c` might look like the below.
 
 ```c
 struct log {

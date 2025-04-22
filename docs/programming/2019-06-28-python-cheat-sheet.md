@@ -1,8 +1,12 @@
 # Python Cheat Sheet for JavaScripters
 
-Python has a lot in common with JavaScript. Functions are first class citizens and everything is an object.
+Python has a lot in common with JavaScript. Functions are first class
+citizens and everything is an object.
 
-For this post I will keep explanations short and try to let the code explain itself. I also expect the readers to be already familiar with most of the concepts, from lets say their JavaScript background. This post serves as mere cheat sheet for syntax.
+For this post I will keep explanations short and try to let the code
+explain itself. I also expect the readers to be already familiar with
+most of the concepts, from lets say their JavaScript background. This
+post serves as mere cheat sheet for syntax.
 
 ## String Interpolation
 
@@ -27,9 +31,7 @@ print(f'Lets {action}')
 ## Short Circuit Evaluation
 
 ```python
-thirsty = True
-
-drink = {
+glass = {
   'type': 'banana split',
   'empty': True,
 }
@@ -40,9 +42,9 @@ def makeDrink(drink_type):
   'empty': False,
 }
 
-drink_from = thirsty and (not drink['empty'] and drink or makeDrink('gin tonic'))
+drink = not glass['empty'] and glass or makeDrink('gin tonic')
 
-print(drink_from)
+print(drink)
 
 # Output: {'type': 'gin tonic', 'empty': False}
 ```
@@ -216,7 +218,14 @@ print(merged)
 ### Direct and Indirect Nested Madness
 
 ```python
-split_merged = [letr for split_word in [[letter for letter in word] for words in words_list for word in words] for letr in split_word]
+split_merged = [
+  letr for split_word in [
+    [letter for letter in word] 
+    for words in words_list for word in words
+  ]
+  for letr in split_word
+]
+
 print(split_merged)
 
 # Output: ['f', 'o', 'o', 'b', 'a', 'r', 'b', 'a', 'z', 'i', 'm', 'p', 'o', 's', 's', 'i', 'b', 'r', 'u', '!']
