@@ -1,4 +1,0 @@
-[submodule ".theme"]
-	path = .theme
-	url = git@github.com:bluebrown/doktri-theme-default.git
-	branch = main
