@@ -1,196 +1,226 @@
-# VLAN Simulation with Linux Network Namespaces
+# Virtual Networking with Network Namespaces and VLANs
 
-This document provides a detailed guide on simulating VLANs using Linux
-tools such as network namespaces (`netns`), virtual Ethernet pairs
-(`veth`), and bridges. The objective is to replicate VLAN-based traffic
-isolation and routing as they would function in physical or
-software-defined networks (SDN).
+This guide demonstrates how to create isolated network environments
+using Linux **network namespaces** and **VLANs**. By leveraging a
+**VLAN-aware bridge**, enabling **NAT for internet connectivity**, and
+employing **iptables for traffic control**, you can build a robust,
+scalable virtual networking environment for testing and development.
+This setup is especially useful for experimenting with software-defined
+networking (SDN) concepts or building virtualized infrastructure.
 
 ## Network Structure
 
 The diagram below illustrates the core components of the setup. Each
 namespace is connected to the VLAN-aware bridge through virtual Ethernet
-pairs (`veth`), with host-side interfaces managing the connections.
+pairs (`veth`), with the bridge managing VLAN tagging and forwarding.
 
 ```mermaid
-graph TD
-    subgraph Host Namespace
-        br0[Bridge br0]
-        br-vlan10[Host Interface br-vlan10]
-        br-vlan20[Host Interface br-vlan20]
-    end
+%%{init: {"theme": "dark"}}%%
+graph BT
+  subgraph Host Namespace
+    br0 --> br-vlan10
+    br0 --> br-vlan20
+  end
+  subgraph VLAN 10 Namespace
+    br-vlan10 --> veth10
+    veth10 --> dev10
+  end
+  subgraph VLAN 20 Namespace
+    br-vlan20 --> veth20
+    veth20 --> dev20
+  end
 
-    subgraph VLAN 10
-        veth10[Namespace Interface veth10]
-        vm10[Namespace vm10]
-        vm10 --> veth10
-    end
+  br0[**br0**<br>shared bridge with VLAN tagging enabled]
+  br-vlan10[**br-vlan10**<br>veth pair in host namespace]
+  br-vlan20[**br-vlan20**<br>veth pair in host namespace]
+  veth10[**veth10**<br>veth pair in VLAN 10]
+  veth20[**veth20**<br>veth pair in VLAN 20]
+  dev10[Device in VLAN 10]
+  dev20[Device in VLAN 20]
+```
 
-    subgraph VLAN 20
-        veth20[Namespace Interface veth20]
-        vm20[Namespace vm20]
-        vm20 --> veth20
-    end
-    
-    veth10 --- br-vlan10
-    veth20 --- br-vlan20
-    br-vlan10 --- br0
-    br-vlan20 --- br0
+> [!NOTE]
+> VLANs are isolated by default. Communication between them requires
+> explicit routing configured on the host.
+
+### Key Concepts
+
+1. **VLANs**: Logical segmentation of Layer 2 networks using 802.1Q
+   tagging.
+2. **Network Namespaces**: Isolated virtual network stacks, similar to
+   lightweight VMs or containers.
+3. **VLAN-Aware Bridge**: A central point for traffic forwarding and
+   VLAN tagging.
+4. **NAT and iptables**: Tools for enabling internet connectivity and
+   controlling inter-VLAN traffic.
+
+## Step-by-Step Configuration
+
+### Create Network Namespaces
+
+Namespaces simulate isolated network environments.
+
+```bash
+ip netns add vlan10
+ip netns add vlan20
+```
+
+### Create Virtual Ethernet Pairs
+
+`veth` pairs act as virtual cables connecting namespaces to the host.
+
+```bash
+ip link add veth10 type veth peer name veth10-br
+ip link add veth20 type veth peer name veth20-br
+```
+
+### Assign Interfaces to Namespaces
+
+Move one end of each `veth` pair into its respective namespace.
+
+```bash
+ip link set veth10 netns vlan10
+ip link set veth20 netns vlan20
+```
+
+### Configure Interfaces in Namespaces
+
+Set IP addresses and activate the interfaces inside the namespaces.
+
+```bash
+ip netns exec vlan10 ip addr add 192.168.10.2/24 dev veth10
+ip netns exec vlan10 ip link set dev veth10 up
+
+ip netns exec vlan20 ip addr add 192.168.20.2/24 dev veth20
+ip netns exec vlan20 ip link set dev veth20 up
 ```
 
 > [!NOTE]  
-> **Isolation by Default**  
-> VLANs are isolated from each other in this configuration.
-> Communication between them requires explicit routing on the host.
+> The IP addresses are examples. They represnt a device in VLAN 10 and
+> VLAN 20, respectively.
 
-## Overview of Components
+### Set Up the VLAN-Aware Bridge
 
-## VLANs in Networking
-
-- **Virtual Local Area Networks (VLANs)** logically segment Layer 2
-  traffic within a shared network infrastructure.
-- **802.1Q Tagging**: Adds VLAN IDs to packets, enabling logical
-  separation even when using shared links.
-
-## Linux Networking Tools
-
-- **Namespaces**: Provide isolated network environments, similar to
-  virtual machines or containers.
-- **Virtual Ethernet Pairs**: Act as virtual cables connecting
-  namespaces to the host.
-- **Bridge**: Functions as a software switch, forwarding traffic between
-  connected interfaces.
-
-## Configuration Steps
-
-## 1. Create Network Namespaces
-
-Network namespaces simulate isolated environments for VLANs.
+Create a VLAN-aware bridge with `vlan_filtering` enabled. Attach the
+`veth` pairs to the bridge and configure VLAN IDs.
 
 ```bash
-ip netns add vm10
-ip netns add vm20
-```
-
-## 2. Create Virtual Ethernet Pairs
-
-Each `veth` pair connects a namespace to the host.
-
-```bash
-ip link add veth10 type veth peer name br-vlan10
-ip link add veth20 type veth peer name br-vlan20
-```
-
-## 3. Assign Interfaces to Namespaces
-
-Move one end of each `veth` pair into the respective namespace.
-
-```bash
-ip link set veth10 netns vm10
-ip link set veth20 netns vm20
-```
-
-## 4. Configure Interfaces in Namespaces
-
-Assign IP addresses and activate the interfaces.
-
-```bash
-ip netns exec vm10 ip addr add 192.168.10.2/24 dev veth10
-ip netns exec vm10 ip link set dev veth10 up
-
-ip netns exec vm20 ip addr add 192.168.20.2/24 dev veth20
-ip netns exec vm20 ip link set dev veth20 up
-```
-
-> [!TIP]  
-> **Advanced Networking**  
-> Consider replacing the Linux bridge with Open vSwitch (OVS) for more
-> advanced VLAN and routing management.
-
-## 5. Set Up the Bridge
-
-Create a bridge in the host namespace to manage network traffic.
-
-```bash
-ip link add name br0 type bridge
+ip link add name br0 type bridge vlan_filtering 1
 ip link set dev br0 up
-ip link set dev br-vlan10 master br0
-ip link set dev br-vlan20 master br0
-ip link set dev br-vlan10 up
-ip link set dev br-vlan20 up
+
+ip link set veth10-br master br0
+bridge vlan add dev veth10-br vid 10 pvid untagged
+
+ip link set veth20-br master br0
+bridge vlan add dev veth20-br vid 20 pvid untagged
 ```
 
 > [!NOTE]  
-> **Bridge Functionality**  
-> The bridge (`br0`) operates as a Layer 2 switch, enabling
-> communication between connected interfaces.
+> When configure pvid untagged, it generally assumes that the uplink is
+> either sending untagged frames or doesn't require explicit VLAN
+> tagging at the source. The bridge or subinterface then takes care of
+> tagging based on the VLAN ID or other configurations.
 
-## 6. Add VLAN Subinterfaces
+### Enable NAT for Internet Access
 
-Configure VLAN subinterfaces on the host for traffic tagging and
-segregation.
+NAT allows namespaces to access the internet by masquerading their
+private IPs as the host's public IP.
 
-```bash
-ip link add link br-vlan10 name br-vlan10.10 type vlan id 10
-ip link set dev br-vlan10.10 up
+1. Enable IP forwarding:
 
-ip link add link br-vlan20 name br-vlan20.20 type vlan id 20
-ip link set dev br-vlan20.20 up
+   ```bash
+   echo 1 > /proc/sys/net/ipv4/ip_forward
+   ```
+
+2. Configure NAT with `iptables`:
+
+   ```bash
+   iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+   ```
+
+3. Allow traffic forwarding between namespaces and the internet:
+
+   ```bash
+   iptables -A FORWARD -i br0 -o eth0 -j ACCEPT
+   iptables -A FORWARD -i eth0 -o br0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+   ```
+
+### (Optional) Use a Reverse Proxy for Ingress
+
+A reverse proxy, such as NGINX, can route external traffic to specific
+namespaces based on hostnames.
+
+```nginx
+server {
+    listen 80;
+    server_name vlan10.example.com;
+
+    location / {
+        proxy_pass http://192.168.10.2;
+    }
+}
+
+server {
+    listen 80;
+    server_name vlan20.example.com;
+
+    location / {
+        proxy_pass http://192.168.20.2;
+    }
+}
 ```
 
-## 7. Assign Gateway IPs
+### Control Inter-VLAN Traffic
 
-Set IP addresses on the VLAN subinterfaces to serve as gateways for
-traffic.
+Use `iptables` to define explicit rules for allowing or blocking
+inter-VLAN communication.
+
+#### Allow Traffic Between VLANs
 
 ```bash
-ip addr add 192.168.10.1/24 dev br-vlan10.10
-ip addr add 192.168.20.1/24 dev br-vlan20.20
+iptables -A FORWARD -i br0 -s 192.168.10.0/24 -d 192.168.20.0/24 -j ACCEPT
+iptables -A FORWARD -i br0 -s 192.168.20.0/24 -d 192.168.10.0/24 -j ACCEPT
 ```
 
-> [!TIP]  
-> **Dynamic Traffic Control**  
-> Integrate an SDN controller to dynamically manage VLAN traffic and
-> routing behaviors for large-scale setups.
-
-## 8. Enable Routing
-
-Allow communication between VLANs by enabling IP forwarding and adding
-routes.
+#### Block Traffic Between VLANs
 
 ```bash
-# Enable IP forwarding on the host
-sysctl -w net.ipv4.ip_forward=1
-
-# Add default routes in namespaces
-ip netns exec vm10 ip route add default via 192.168.10.1
-ip netns exec vm20 ip route add default via 192.168.20.1
+iptables -A FORWARD -i br0 -s 192.168.10.0/24 -d 192.168.20.0/24 -j DROP
+iptables -A FORWARD -i br0 -s 192.168.20.0/24 -d 192.168.10.0/24 -j DROP
 ```
 
 ## Verification
 
-## Test Within VLANs
+### Within VLANs
 
-Ping the gateway from devices within the same VLAN to verify
-connectivity.
+Ping the gateway from devices within the same VLAN.
 
 ```bash
-ip netns exec vm10 ping -c 3 192.168.10.1
+ip netns exec vlan10 ping -c 3 192.168.10.1
 ```
 
-## Test Across VLANs
+### Across VLANs
 
-Ping devices across VLANs to verify inter-VLAN routing (if configured).
+Ping devices across VLANs to verify inter-VLAN routing (if allowed).
 
 ```bash
-ip netns exec vm10 ping -c 3 192.168.20.2
+ip netns exec vlan10 ping -c 3 192.168.20.2
+```
+
+### Internet Access
+
+Ensure namespaces can access the internet.
+
+```bash
+ip netns exec vlan10 curl http://example.com
 ```
 
 ## Summary
 
-- **Bridge as a Central Hub**: The bridge (`br0`) manages and forwards
-  traffic between connected interfaces.
-- **Traffic Isolation**: VLANs remain isolated unless explicitly routed
-  on the host.
-- **Scalable Networking**: This setup provides a foundation for
-  experimenting with VLANs and SDN in virtualized environments.
+- **VLAN-Aware Bridge**: Centralizes VLAN tagging and simplifies
+  management.
+- **NAT**: Enables outbound internet connectivity for namespaces.
+- **Reverse Proxy (Optional)**: Routes ingress traffic to specific
+  namespaces.
+- **Traffic Control**: Fine-grained control over inter-VLAN
+  communication via `iptables`.
