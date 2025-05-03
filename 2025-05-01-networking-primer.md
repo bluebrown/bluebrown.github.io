@@ -1,170 +1,293 @@
 # Networking Primer
 
-## Network Data Flow
+Networking connects devices to enable communication by utilizing
+physical links—either point-to-point connections (e.g., between two
+devices) or shared mediums (e.g., wireless or Ethernet networks). These
+physical links form the "roads" on which data travels. However, the
+global connectivity we experience today depends on a **logical network**
+layered on top of this physical foundation.
 
-The following describes the data flow through a typical network
-interface:
+The logical network uses protocols like Ethernet and IP to define rules
+for addressing and communication. Data travels in packets, structured
+units that cross boundaries called broadcast domains. A broadcast domain
+is a segment of the network where devices can directly communicate by
+broadcasting messages, such as ARP requests ("Who has this IP?").
 
-1. **Medium (Cable/Wireless):** The physical medium over which data
-   travels, e.g., Ethernet cables or Wi-Fi signals.
-2. **Adapter (Network Adapter, optional):** Converts data for
-   compatibility with the physical medium, e.g., USB-to-Ethernet
-   adapters.
-3. **NIC (Network Interface Card):**
-   - **PHY (Physical Layer):** Modulates and demodulates signals into
-     electrical, optical, or wireless forms suitable for the medium.
-   - **MAC (Media Access Control):** Handles framing, addressing, access
-     control, and error detection on the medium.
-4. **DMA (Direct Memory Access, commonly used):** Transfers data between
-hardware and system memory without CPU intervention.
-5. **Driver:** Software that communicates with the NIC and may offload
-tasks (e.g., checksum calculations) to the hardware for optimization.
-6. **OS Buffer:** Temporary memory in the operating system for storing
-incoming and outgoing packets. This operates in **kernel space**, often
-using structures like `struct sk_buff` in Linux.
-7. **OS Network Stack:** Handles network protocols and tasks such as:
-   - **ARP (Address Resolution Protocol):** Maps IP addresses to MAC
-     addresses.
-   - **TCP/IP or UDP:** Manages communication protocols and flow
-     control.
-   - **Fragmentation/Reassembly:** Splits or reassembles packets for
-     efficient transmission.
-8. **Network Interface:** Exposed to userland applications through APIs
-like sockets for sending and receiving data.
+When data crosses into another network, it leaves its broadcast domain
+and enters another. At each boundary, data is **re-encapsulated** at the
+Data Link Layer (Layer 2) for the next hop, while the Network Layer
+(Layer 3) information (e.g., IP address) remains unchanged. This ensures
+data can traverse multiple physical and logical networks to reach its
+destination.
 
-> [!NOTE]
->
-> - **Kernel Space:** Layers such as the NIC, driver, OS buffer, and
->   network stack operate in privileged kernel mode.
-> - **User Space:** Applications interact with the network stack via the
->   **Network Interface**, typically using socket APIs.
-> - **Raw Sockets:** Allow userland programs to bypass the network stack
->   for custom packet construction, often used for diagnostics or
->   specialized applications. These usually require elevated privileges.
+## Networking Layers
 
-## Networking Devices and Concepts
+To understand how networking operates, it is essential to grasp the
+**OSI Model**, a conceptual framework that organizes networking into
+seven layers. Each layer has specific responsibilities, and together
+they enable seamless communication between devices.
 
-### Switch (Layer 2)
+### Data Link Layer (Layer 2)
 
-- Operates at the **Data Link Layer (Layer 2)** of the OSI model.
-- Forwards packets based on **MAC addresses**.
-- Uses a **MAC address table (CAM table)** to map MAC addresses to
-  switch ports.
-- Connects devices in a **Local Area Network (LAN)** and enables
-  efficient communication within the same Layer 2 domain.
+The Data Link Layer is responsible for local communication within the
+same physical or logical network (e.g., Ethernet switching). It
+encapsulates data into **frames** with MAC addresses for source and
+destination.
 
-### Router (Layer 3)
+A single packet from the Network Layer may be fragmented into multiple
+frames at this layer, depending on the Maximum Transmission Unit (MTU)
+of the physical medium. For example, if a packet is larger than the MTU
+(e.g., 1500 bytes for Ethernet), it will be split into smaller frames,
+each transmitted separately.
 
-- Operates at the **Network Layer (Layer 3)** of the OSI model.
-- Routes packets between subnets or networks using **IP addresses** and
-  routing tables.
-- Connects multiple networks to enable communication between them,
-  ensuring proper delivery across Layer 3 boundaries.
+> [!TIP]  
+> Mismatched MTU settings can lead to packet fragmentation or dropped
+> packets. Configuring consistent MTU sizes across devices is crucial
+> for avoiding these issues.
 
-### Bridge Drivers (Software Bridges)
+```console
+Frame: 00:1A:2B:3C:4D:5E -> FF:FF:FF:FF:FF:FF | EtherType: 0x0800 | Payload: [DATA]
+```
 
-- **Functionality:** Software bridges join multiple network interfaces
-  into a single Layer 2 network, enabling communication without
-  requiring a router.
-- **Common Use Cases:**
-  - Virtualization environments to connect virtual machines or
-    containers.
-  - Extending Layer 2 domains across network interfaces.
-- **How They Work:** Forward Ethernet frames between interfaces based on
-  MAC addresses.
-- **Bypassing Routers:** Allows devices on different interfaces to
-  communicate directly without needing Layer 3 routing.
+### Network Layer (Layer 3)
 
-Example of creating a software bridge in Linux:
+The Network Layer enables communication across different networks using
+logical addressing (IP addresses). It encapsulates data into **packets**
+with source and destination IP addresses.
+
+```console
+Packet: Source IP: 192.168.1.10 -> Destination IP: 192.168.1.20
+```
+
+### Transport Layer (Layer 4)
+
+The Transport Layer ensures reliable communication through protocols
+like TCP (connection-oriented) and UDP (connectionless). It encapsulates
+data into **segments** (TCP) or **datagrams** (UDP) for delivery between
+applications.
+
+At this layer, a single application message (e.g., an HTTP request) can
+be divided into multiple packets for delivery. For example:
+
+- In TCP, large chunks of data are split into multiple packets to ensure
+  reliable delivery, with each packet numbered for sequencing and
+  acknowledgment.
+- In UDP, data is also split into packets, but without guarantees for
+  sequencing or delivery.
+
+```console
+Source Port: 443, Destination Port: 12345, Sequence: 1001, ACK: 2001
+```
+
+### How Layers Work Together
+
+Data from a higher layer (e.g., an application) is sequentially
+encapsulated as it passes through lower layers. At the receiving end,
+the process is reversed (decapsulation). For example:
+
+1. A large file download may begin as a single request at the
+   Application Layer.
+2. The Transport Layer splits it into multiple packets for delivery.
+3. The Network Layer routes each packet to its destination.
+4. The Data Link Layer fragments these packets further into frames for
+   transmission over the physical medium.
+
+## Addressing Mechanisms in Networking
+
+Addressing is critical for identifying devices and enabling
+communication. Networking employs two primary types of addresses:
+
+### MAC Addresses (Physical Layer)
+
+MAC addresses are unique hardware identifiers assigned to network
+interfaces. They are used for local communication within the same
+broadcast domain.
+
+Example: `00:1A:2B:3C:4D:5E`
+
+### IP Addresses (Logical Layer)
+
+IP addresses are software-configurable and used for communication across
+networks. They consist of network and host portions, defined by a
+**subnet mask** or **CIDR notation**.
+
+Example: `192.168.1.1/24`
+
+### ARP (Address Resolution Protocol)
+
+ARP resolves IP addresses to MAC addresses for communication within a
+subnet.
+
+```console
+Who has 192.168.1.10? Tell 192.168.1.1
+Response: 192.168.1.10 is at 00:1A:2B:3C:4D:5E
+```
+
+## Subnets and Broadcast Domains
+
+Subnets and broadcast domains define how devices communicate within and
+across networks.
+
+### Subnets and Isolation
+
+A subnet is a logically segmented portion of a network, defined by a
+subnet mask or CIDR notation. For example, `192.168.1.0/24` covers IPs
+`192.168.1.1` to `192.168.1.254`. Devices in the same subnet communicate
+directly using MAC addresses, while devices in different subnets require
+a router to forward traffic.
+
+### Physical and Logical Independence
+
+Physical and logical network configurations do not always align. For
+example, multiple subnets can coexist on the same physical switch,
+ensuring devices in different subnets cannot communicate directly via
+MAC addresses. Conversely, technologies like VXLAN (Virtual Extensible
+LAN) enable devices to communicate across different physical hosts by
+encapsulating Layer 2 frames over Layer 3 networks. This flexibility is
+a hallmark of modern scalable network designs.
+
+### Unicast, Multicast, and Broadcast
+
+Networking uses three primary communication methods depending on the
+target audience for data:
+
+- **Unicast**: Data is sent from one sender to a single specific
+  receiver. Most internet traffic, such as HTTP requests, is unicast.
+
+  ```console
+  Unicast: Source IP: 192.168.1.10 -> Destination IP: 192.168.1.20
+  ```
+
+- **Multicast**: Data is sent from one sender to multiple specific
+  receivers who have opted to join the multicast group. Common in video
+  streaming and conferencing applications.
+
+  ```console
+  Multicast: Source IP: 192.168.1.10 -> Multicast Group: 224.0.0.1
+  ```
+
+- **Broadcast**: Data is sent from one sender to all devices in the
+  broadcast domain. Used for discovery protocols like ARP.
+
+  ```console
+  Broadcast: Source IP: 192.168.1.10 -> Destination MAC: FF:FF:FF:FF:FF:FF
+  ```
+
+Understanding these methods is essential for designing and
+troubleshooting networks, as each has specific use cases and
+limitations.
+
+### VLANs and VXLANs in Practice
+
+VLANs isolate traffic within the same physical switch, while VXLANs
+extend that isolation across multiple switches and even data centers. In
+multi-tenant environments like cloud data centers, these technologies
+ensure secure and scalable network segmentation.
+
+```bash
+# Example: Creating a VXLAN interface in Linux
+ip link add vxlan0 type vxlan id 42 dev eth0 dstport 4789
+bridge fdb add 00:11:22:33:44:55 dev vxlan0 dst 192.168.1.100
+```
+
+## From Wire to Userland
+
+### The Network Interface Card (NIC)
+
+The NIC translates data between physical signals (e.g., electrical,
+optical) and packet data for the operating system. For example, it
+receives an Ethernet frame, strips the header, and passes it to the
+kernel network stack.
+
+### Packet Journey
+
+1. NIC receives a frame.
+2. Frame processed at Layer 2 (Data Link).
+3. IP packet extracted and processed at Layer 3 (Network).
+4. TCP/UDP segment processed at Layer 4 (Transport).
+5. Payload delivered to user-space application.
+
+## Network Troubleshooting Basics
+
+Understanding network troubleshooting tools is essential for diagnosing
+issues. Common tools include:
+
+- `ping`: Tests reachability of a host.
+- `traceroute`: Traces the path packets take to a destination.
+- `tcpdump`: Captures and analyzes network traffic.
+- `netstat`: Displays active connections and listening ports.
+- `nslookup` or `dig`: Resolves DNS queries.
+
+```bash
+# Example: Capturing traffic on interface eth0
+tcpdump -i eth0 port 80
+```
+
+## Roles of Common Devices
+
+### Switch
+
+A switch connects multiple devices in a network via point-to-point
+connections. Operating at Layer 2 (Data Link), it forwards frames based
+on MAC addresses.
+
+### Router
+
+A router connects multiple networks and determines the best path for
+data using routing protocols. It operates at Layer 3 (Network) and
+forwards packets based on IP addresses.
+
+### Firewall
+
+A firewall monitors and controls traffic based on security rules. It
+operates at multiple layers, commonly Layer 3 (Network) and Layer 4
+(Transport).
+
+## Hands-On Labs
+
+### Using Linux Bridge Driver as a Layer 2 Switch
+
+Create a bridge interface:
 
 ```bash
 ip link add name br0 type bridge
-ip link set dev eth0 master br0
 ip link set dev eth1 master br0
-ip link set dev br0 up 
+ip link set dev eth2 master br0
+ip link set dev br0 up
+ip link set dev eth1 up
+ip link set dev eth2 up
 ```
 
-> [!NOTE]  
-> Software bridges are a versatile tool in modern networking and are
-> commonly used in virtualization and containerized environments.
+### Using Linux as a Layer 3 Router
 
-> [!TIP]  
-> Switches can also be used in conjunction with software bridges for more
-> complex setups, such as VLAN management.
-
-## Layer 2 vs. Layer 3
-
-Understanding the distinction between **Layer 2 (Data Link Layer)** and
-**Layer 3 (Network Layer)** is crucial for networking design and
-troubleshooting.
-
-### Layer 2 (Data Link Layer)
-
-- Operates using **MAC addresses** to forward packets within the same
-  broadcast domain.
-- Devices communicate directly using **ARP (Address Resolution
-  Protocol)** to map IP addresses to MAC addresses.
-- **Limitations:** Layer 2 cannot forward packets outside the LAN
-  without special extensions like VLAN bridging or tunneling.
-
-> [!NOTE]  
-> ARP resolves IP addresses to MAC addresses for Layer 2 communication.
-> Once resolved, only MAC addresses are used for data transmission.
-
-### Layer 3 (Network Layer)
-
-- Operates using **IP addresses** to route packets between different
-  networks or subnets.
-- When a destination IP is outside the LAN:
-  - Sends the packet to the **default gateway** (usually a router).
-  - The router determines the best path to the destination network.
-
-#### Key Workflow: IP Lookup
-
-1. **Within the same LAN:**
-   - Use ARP to resolve the destination IP to a MAC address and send the
-     packet directly over Layer 2.
-2. **Outside the LAN:**
-   - Forward the packet to the router (default gateway) for routing to
-     the destination network.
-
-> [!NOTE]
-> Technologies like **Layer 2 Tunneling Protocol (L2TP)** or VLAN
-> bridging can extend Layer 2 connectivity across different networks,
-> bypassing the need for a router in specific setups.
-
----
-
-## TAP Devices
-
-TAP (Terminal Access Point) devices are **virtual network interfaces**
-that simulate a physical Layer 2 connection. They are commonly used in
-virtualization, testing, or coding exercises.
-
-- TAP devices handle Ethernet frames and expose them to userland
-  programs, behaving like a NIC but existing entirely in software.
-- Programs can directly read and write Ethernet frames to the TAP
-  interface.
-
-Example of creating a TAP device in Linux:
+Enable IP forwarding:
 
 ```bash
-ip tuntap add dev tap0 mode tap 
-ip addr add 192.0.0.1/24 dev
-tap0 ip link set dev tap0 up 
+echo 1 | tee /proc/sys/net/ipv4/ip_forward
 ```
 
-> [!NOTE]
-> Ensure the `tuntap` kernel module is loaded using `modprobe tun`
-> before creating TAP devices.
+Configure a route:
 
-## Resources
+```bash
+ip route add 10.0.0.0/24 via 192.168.1.1
+```
 
-- [LearnCisco: Ethernet Protocol](https://www.learncisco.net/courses/icnd-1/building-a-network/ethernet-protocol.html)
-- [LearnCisco: TCP/IP Internet Layer](https://www.learncisco.net/courses/icnd-1/building-a-network/tcpip-internet-layer.html)
-- [Red Hat: Introduction to Linux Interfaces](https://developers.redhat.com/blog/2018/10/22/introduction-to-linux-interfaces-for-virtual-networking)
-- [Linux Kernel Docs: TUN/TAP](https://docs.kernel.org/networking/tuntap.html)
-- [GitHub: iproute2](https://github.com/iproute2/iproute2/blob/main/ip/iptuntap.c#L48)
-- [StackOverflow: Managing Network Interfaces](https://stackoverflow.com/questions/5858655/linux-programmatically-up-down-an-interface-kernel#5859449)
-- [StackOverflow: IFF_UP vs IFF_RUNNING](https://stackoverflow.com/questions/11679514/what-is-the-difference-between-iff-up-and-iff-running)
-- [VLAN Tagging](https://networkengineering.stackexchange.com/questions/6483/why-and-how-are-ethernet-vlans-tagged)
+### Using Linux as a Layer 4 Firewall
+
+Basic iptables setup to block all incoming traffic except SSH:
+
+```bash
+iptables -P INPUT DROP
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -P OUTPUT ACCEPT
+```
+
+## Conclusion
+
+Networking is a complex yet fascinating field that underpins modern
+communication. By understanding the layers, addressing mechanisms, and
+troubleshooting techniques, you can navigate the intricacies of
+networking with confidence. This primer serves as a foundation for
+further exploration into advanced topics like routing protocols, network
+security, and cloud networking.
